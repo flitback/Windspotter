@@ -5,8 +5,9 @@ const concat = require('concat-stream');
 const fs = require('fs');
 
 const {LinkCrawler} = require('./../src/link_crawler');
+const {ForecastJSON} = require('./../server/models/forecastJSON');
 
-const DataCrawler = (url) => {
+const DataCrawler = (url, forecastType) => {
     //check if Data is allready in DB to be implemented
     LinkCrawler(url, (linkList) => {
         linkList.forEach((link, i) => {
@@ -17,7 +18,38 @@ const DataCrawler = (url) => {
                     data: true
                 }, (err, json) => {
                     if (err) return console.log(err);
-                    console.log(json[0].header.forecastTime);
+
+                    let refTimestamp = Date.parse(json[0].header.refTime);
+                    let forecastTime = refTimestamp + (json[0].header.forecastTime * 60 * 1000);
+
+                    ForecastJSON.find({
+                        forecastType,
+                        forecastTime
+                    }).then((res) => {
+                        if (res[0]) {
+                            // ForecastJSON.findByIdAndUpdate(res[0]._id , {
+                            //     forecastType,
+                            //     refTimestamp,
+                            //     header: json[0].header,
+                            //     data: json[0].data
+                            // }, (err, res) => {
+                            //     if (err) {console.log(err)}
+                            //     console.log('added', res.forecastType);
+                            // });
+                        } else {
+                            let JSONForecast = new ForecastJSON({
+                                forecastType,
+                                forecastTime,
+                                refTimestamp,
+                                header: json[0].header,
+                                data: json[0].data})
+                            JSONForecast.save((err, doc) => {
+                                if (err) return console.error(err);
+                                console.log(doc.forecastType + ' ' + json[0].header.forecastTime + ' saved to the database');
+                            });
+                        }
+                        
+                    });
                     fs.unlink(filename, (err) => {
                         if (err) return console.log(err);
                     });

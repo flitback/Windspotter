@@ -28,10 +28,9 @@ db.once('open', () => {
             } 
             if (res[0].timestamp < timestamp) {
                 DlTimestamp.findByIdAndUpdate(res[0]._id , {$set: timestamp});
-                DataCrawler(url);
+                DataCrawler(url, forecastTypes[0]);
             }
             return console.log('up 2 date');
         });
     });
-
 });
